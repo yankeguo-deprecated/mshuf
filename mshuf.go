@@ -1,13 +1,43 @@
 package mshuf
 
 import (
-	srand "crypto/rand"
 	"encoding/binary"
-	mrand "math/rand"
+	"io"
+	"math/rand"
 )
 
 // Matrix a matrix for mshuf
-type Matrix [16][16]byte
+type Matrix []byte
+
+// MatrixSize = 16
+const MatrixSize = 16
+
+// MatrixLength the length of matrix
+const MatrixLength = MatrixSize * MatrixSize
+
+// NewMatrix create a new empty matrix
+func NewMatrix() Matrix {
+	return make(Matrix, MatrixLength, MatrixLength)
+}
+
+// IdentityRowAt set identity sequence at row n
+func (m Matrix) IdentityRowAt(n int) {
+	for i := 0; i < MatrixSize; i++ {
+		m[n*MatrixSize+i] = byte(i)
+	}
+}
+
+// RandomRowAt set random sequence at row n
+func (m Matrix) RandomRowAt(r io.Reader, n int) error {
+	// seeds
+	s := make([]byte, 8, 8)
+	if _, err := r.Read(s); err != nil {
+		return err
+	}
+	// make
+	randSequence(int64(binary.BigEndian.Uint64(s)), m[n*MatrixSize:(n+1)*MatrixSize])
+	return nil
+}
 
 // Shuffle shuffle a uint64
 func (m Matrix) Shuffle(n uint64) uint64 {
@@ -15,33 +45,19 @@ func (m Matrix) Shuffle(n uint64) uint64 {
 	binary.BigEndian.PutUint64(b, n)
 	for i := 0; i < 8; i++ {
 		d := b[i]
-		b[i] = m[i*2][d>>4]<<4 + m[i*2+1][d&0x0f]
+		b[i] = m[i*2*MatrixSize+int(d>>4)]<<4 + m[(i*2+1)*MatrixSize+int(d&0x0f)]
 	}
 	return binary.BigEndian.Uint64(b)
 }
 
-// RandMatrix create a new randomized matrix for mshuf with crypto/rand
-func RandMatrix(m *Matrix) error {
-	// seeds
-	s := make([]byte, len(m)*8, len(m)*8)
-	_, err := srand.Read(s)
-	if err != nil {
-		return err
-	}
-	// make
-	for i := 0; i < len(m); i++ {
-		randSequence(int64(binary.BigEndian.Uint64(s[i*8:(i+1)*8])), &m[i])
-	}
-	return nil
-}
-
-func randSequence(seed int64, seq *[16]byte) {
+// RandSequence create a rand sequence from 0 to f
+func randSequence(seed int64, seq []byte) {
 	// fill sequence
 	for i := 0; i < len(seq); i++ {
 		seq[i] = byte(i)
 	}
 	// Fisher-Yates shuffle
-	rnd := mrand.New(mrand.NewSource(seed))
+	rnd := rand.New(rand.NewSource(seed))
 	for i := len(seq) - 1; i > 0; i = i - 1 {
 		j := rnd.Intn(i)
 		k := seq[i]

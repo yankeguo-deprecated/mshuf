@@ -7,12 +7,9 @@ import (
 )
 
 func TestMatrix_ShuffleIdentity(t *testing.T) {
-	m := Matrix{}
-	// seed matrix with identity
-	for i := 0; i < len(m); i++ {
-		for j := 0; j < len(m[i]); j++ {
-			m[i][j] = byte(j)
-		}
+	m := NewMatrix()
+	for i := 0; i < MatrixSize; i++ {
+		m.IdentityRowAt(i)
 	}
 	for i := 0; i < 100; i++ {
 		b := make([]byte, 8, 8)
