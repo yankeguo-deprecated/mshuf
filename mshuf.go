@@ -1,9 +1,9 @@
 package mshuf
 
 import (
+	srand "crypto/rand"
 	"encoding/binary"
-	"io"
-	"math/rand"
+	mrand "math/rand"
 )
 
 // Matrix a matrix for mshuf
@@ -21,10 +21,10 @@ func (m Matrix) Shuffle(n uint64) uint64 {
 }
 
 // RandMatrix create a new randomized matrix for mshuf with crypto/rand
-func RandMatrix(m *Matrix, r io.Reader) error {
+func RandMatrix(m *Matrix) error {
 	// seeds
 	s := make([]byte, len(m)*8, len(m)*8)
-	_, err := r.Read(s)
+	_, err := srand.Read(s)
 	if err != nil {
 		return err
 	}
@@ -41,7 +41,7 @@ func randSequence(seed int64, seq *[16]byte) {
 		seq[i] = byte(i)
 	}
 	// Fisher-Yates shuffle
-	rnd := rand.New(rand.NewSource(seed))
+	rnd := mrand.New(mrand.NewSource(seed))
 	for i := len(seq) - 1; i > 0; i = i - 1 {
 		j := rnd.Intn(i)
 		k := seq[i]
